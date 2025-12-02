@@ -356,6 +356,59 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // API buat like post
+  if (url.pathname === "/api/like" && method === "POST") {
+    if (!user) {
+      res.writeHead(401);
+      return res.end(JSON.stringify({ error: "Login required" }));
+    }
+
+    try {
+      const bodyStr = await getBody(req);
+      const { postId } = JSON.parse(bodyStr);
+
+      const checkQuery =
+        "SELECT * FROM post_likes WHERE user_id = $1 AND post_id = $2";
+      const checkRes = await pool.query(checkQuery, [user.id, postId]);
+
+      let newLikesCount = 0;
+      let isLiked = false;
+
+      if (checkRes.rows.length > 0) {
+        await pool.query(
+          "DELETE FROM post_likes WHERE user_id = $1 AND post_id = $2",
+          [user.id, postId]
+        );
+
+        const updateRes = await pool.query(
+          "UPDATE posts SET likes = likes - 1 WHERE id = $1 RETURNING likes",
+          [postId]
+        );
+        newLikesCount = updateRes.rows[0].likes;
+        isLiked = false;
+      } else {
+        await pool.query(
+          "INSERT INTO post_likes (user_id, post_id) VALUES ($1, $2)",
+          [user.id, postId]
+        );
+        const updateRes = await pool.query(
+          "UPDATE posts SET likes = likes + 1 WHERE id = $1 RETURNING likes",
+          [postId]
+        );
+        newLikesCount = updateRes.rows[0].likes;
+        isLiked = true;
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, likes: newLikesCount, isLiked }));
+    } catch (err) {
+      console.error(err);
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: "Server Error" }));
+    }
+    return;
+  }
+
   // route logout
   if (url.pathname === "/api/logout") {
     res.writeHead(302, {
