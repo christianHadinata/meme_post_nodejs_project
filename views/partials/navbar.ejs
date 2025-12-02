@@ -1,0 +1,28 @@
+<nav class="navbar">
+  <a href="/" class="reset-link-style">
+    <h1 class="nav-logo">MemeBE</h1>
+  </a>
+
+  <div class="nav-right">
+    <% if (user) { %>
+    <a href="/add-post"><button>+</button></a>
+
+    <a href="/profile" class="profile-wrapper reset-link-style">
+      <span><%= user.username %></span>
+      <div
+        class="profile-pic-dummy"
+        style="
+          background-image: url('<%= user.profile_picture %>');
+          background-size: cover;
+        "
+      ></div>
+    </a>
+
+    <a href="/api/logout"><button class="btn-logout">Logout</button></a>
+
+    <% } else { %>
+    <a href="/add-post"><button>+</button></a>
+    <a href="/login"><button>Login</button></a>
+    <% } %>
+  </div>
+</nav>

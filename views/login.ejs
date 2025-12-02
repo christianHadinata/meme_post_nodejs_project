@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - MemeBE</title>
+    <link rel="stylesheet" href="/public/css/global.css" />
+    <style>
+      /* CSS Spesifik Login */
+      .login-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+      }
+      .login-card {
+        width: 100%;
+        max-width: 400px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        padding: 40px;
+        text-align: center;
+        border-radius: 10px;
+      }
+      .input-group {
+        margin-bottom: 20px;
+      }
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+      }
+      button[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #0095f6;
+        color: white;
+        border: none;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="main-container login-wrapper">
+      <div class="login-card">
+        <h1 style="margin-bottom: 20px">MemeBE</h1>
+
+        <form action="/api/login" method="POST">
+          <div class="input-group">
+            <input
+              type="text"
+              name="username"
+              placeholder="Username"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              required
+            />
+          </div>
+
+          <button type="submit">Log In</button>
+        </form>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <p style="color: red; margin-top: 10px"><%= error %></p>
+        <% } %>
+
+        <p style="margin-top: 20px">
+          <a href="/" style="color: var(--text-secondary)">Back to Home</a>
+        </p>
+      </div>
+    </main>
+  </body>
+</html>
