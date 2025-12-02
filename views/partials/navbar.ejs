@@ -4,7 +4,14 @@
   </a>
 
   <div class="nav-right">
-    <% if (user) { %>
+    <% if (user) { %> <% if (user.role === 'admin') { %>
+    <a href="/admin"
+      ><button style="background: red; border: none; color: white">
+        Manage
+      </button></a
+    >
+    <% } %>
+
     <a href="/add-post"><button>+</button></a>
 
     <a href="/profile" class="profile-wrapper reset-link-style">

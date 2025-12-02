@@ -1,0 +1,143 @@
+<div id="postModal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close">&times;</span>
+
+    <img id="modalImg" class="modal-img" src="" alt="Post Image" />
+
+    <div class="modal-details">
+      <p id="modalCaption" class="modal-caption"></p>
+      <small
+        id="modalAuthor"
+        style="color: gray; display: block; margin-bottom: 5px"
+      ></small>
+      <p id="modalLikes" class="modal-likes"></p>
+    </div>
+
+    <button
+      id="btnDelete"
+      class="btn-danger hidden"
+      style="
+        width: 100%;
+        margin-top: 15px;
+        padding: 10px;
+        background: red;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      "
+    >
+      Take Down Post (Admin)
+    </button>
+  </div>
+</div>
+
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+  .modal-content {
+    background-color: var(--bg-secondary);
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .modal-img {
+    width: 100%;
+    border-radius: 5px;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
+
+<script>
+  const modal = document.getElementById("postModal");
+  const modalImg = document.getElementById("modalImg");
+  const modalCaption = document.getElementById("modalCaption");
+  const modalLikes = document.getElementById("modalLikes");
+  const modalAuthor = document.getElementById("modalAuthor");
+  const btnDelete = document.getElementById("btnDelete");
+  const closeBtn = document.querySelector(".modal-close");
+
+  function openModal(id, imageUrl, caption, likes, username, isAdmin) {
+    modal.style.display = "block";
+    modalImg.src = imageUrl;
+    modalCaption.textContent = caption;
+    modalLikes.textContent = likes + " Likes";
+    modalAuthor.textContent = "Posted by: " + username;
+
+    btnDelete.onclick = null;
+
+    if (isAdmin) {
+      btnDelete.classList.remove("hidden");
+      btnDelete.onclick = function () {
+        if (
+          confirm("Apakah Anda yakin ingin menghapus post ini secara permanen?")
+        ) {
+          deletePost(id);
+        }
+      };
+    } else {
+      btnDelete.classList.add("hidden");
+    }
+  }
+
+  function handlePostClick(element) {
+    const id = element.dataset.id;
+    const imgUrl = element.dataset.img;
+    const caption = element.dataset.caption;
+    const likes = element.dataset.likes;
+    const username = element.dataset.username;
+
+    const isAdmin = element.dataset.isadmin === "true";
+
+    openModal(id, imgUrl, caption, likes, username, isAdmin);
+  }
+
+  async function deletePost(postId) {
+    try {
+      const response = await fetch("/api/post/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: postId }),
+      });
+
+      if (response.ok) {
+        alert("Post berhasil dihapus!");
+        window.location.reload();
+      } else {
+        alert("Gagal menghapus post.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan server.");
+    }
+  }
+
+  closeBtn.onclick = function () {
+    modal.style.display = "none";
+  };
+  window.onclick = function (event) {
+    if (event.target == modal) modal.style.display = "none";
+  };
+</script>

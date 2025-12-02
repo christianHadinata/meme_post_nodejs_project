@@ -64,12 +64,25 @@
       </div>
 
       <div class="posts-grid">
-        <% posts.forEach(post => { %>
-        <div class="grid-item" onclick="alert('Modal')">
+        <% posts.forEach(post => { %> <% const isOwnerOrAdmin = (user &&
+        user.role === 'admin'); %>
+
+        <div
+          class="grid-item"
+          onclick="handlePostClick(this)"
+          data-id="<%= post.id %>"
+          data-img="<%= post.image_url %>"
+          data-caption="<%= post.caption %>"
+          data-likes="<%= post.likes %>"
+          data-username="<%= targetUser.username %>"
+          data-isadmin="<%= isOwnerOrAdmin %>"
+        >
           <img src="<%= post.image_url %>" alt="Meme" />
         </div>
         <% }) %>
       </div>
     </main>
+
+    <%- include('partials/modal') %>
   </body>
 </html>

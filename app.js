@@ -295,6 +295,67 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // route manage post admin
+  if (url.pathname === "/admin" && method === "GET") {
+    console.log(user);
+    if (!user || user.role !== "admin") {
+      res.writeHead(403);
+      return res.end("Access Denied: Admins only.");
+    }
+
+    try {
+      const query = `
+                SELECT posts.*, users.username 
+                FROM posts 
+                JOIN users ON posts.user_id = users.id 
+                ORDER BY created_at DESC
+            `;
+      const result = await pool.query(query);
+      return render(res, "admin.ejs", { user, posts: result.rows });
+    } catch (err) {
+      console.error(err);
+      return render(res, "admin.ejs", { user, posts: [] });
+    }
+  }
+
+  if (url.pathname === "/api/post/delete" && method === "POST") {
+    if (!user) return res.end("Unauthorized");
+
+    try {
+      const bodyStr = await getBody(req);
+      const { postId } = JSON.parse(bodyStr);
+
+      const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [
+        postId,
+      ]);
+      if (postRes.rows.length === 0) return res.end("Post not found");
+
+      const post = postRes.rows[0];
+
+      if (user.role !== "admin") {
+        res.writeHead(403);
+        return res.end("Forbidden");
+      }
+
+      const relativePath = post.image_url.substring(1);
+      const absolutePath = path.join(__dirname, relativePath);
+
+      if (fs.existsSync(absolutePath)) {
+        fs.unlinkSync(absolutePath);
+      }
+
+      await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      console.error(err);
+      res.writeHead(500);
+      res.end(JSON.stringify({ success: false }));
+    }
+    return;
+  }
+
   // route logout
   if (url.pathname === "/api/logout") {
     res.writeHead(302, {
