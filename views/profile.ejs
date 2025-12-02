@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile - MemeBE</title>
+    <link rel="stylesheet" href="/public/css/global.css" />
+    <style>
+      .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .profile-pic-lg {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #ddd;
+        background-size: cover;
+        background-position: center;
+      }
+      .profile-info h2 {
+        font-size: 1.5rem;
+        font-weight: normal;
+        margin-bottom: 5px;
+      }
+      .posts-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 3px;
+        margin-top: 10px;
+      }
+      .grid-item {
+        position: relative;
+        aspect-ratio: 1/1;
+        cursor: pointer;
+      }
+      .grid-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .grid-item:hover {
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="main-container">
+      <%- include('partials/navbar') %>
+
+      <div class="profile-header">
+        <div
+          class="profile-pic-lg"
+          style="background-image: url('<%= targetUser.profile_picture %>')"
+        ></div>
+        <div class="profile-info">
+          <h2><%= targetUser.username %></h2>
+          <p><strong><%= posts.length %></strong> posts</p>
+          <% if(user && user.id === targetUser.id) { %> <% } %>
+        </div>
+      </div>
+
+      <div class="posts-grid">
+        <% posts.forEach(post => { %>
+        <div class="grid-item" onclick="alert('Modal')">
+          <img src="<%= post.image_url %>" alt="Meme" />
+        </div>
+        <% }) %>
+      </div>
+    </main>
+  </body>
+</html>

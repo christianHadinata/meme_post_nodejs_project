@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Post - MemeBE</title>
+    <link rel="stylesheet" href="/public/css/global.css" />
+    <style>
+      .header-post {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .image-preview-area {
+        width: 100%;
+        min-height: 300px;
+        background-color: var(--bg-tertiary);
+        border: 1px dashed var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+      .image-preview-area img {
+        max-width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+      }
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        resize: vertical;
+        min-height: 100px;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="main-container">
+      <div class="header-post">
+        <a href="/" class="reset-link-style" style="font-size: 1.5rem"
+          >&times;</a
+        >
+        <h2>New Post</h2>
+        <button
+          id="submitBtn"
+          style="
+            color: #0095f6;
+            font-weight: bold;
+            background: none;
+            border: none;
+            cursor: pointer;
+          "
+          disabled
+        >
+          Post
+        </button>
+      </div>
+
+      <form
+        id="uploadForm"
+        action="/api/post"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        <div class="image-preview-area" id="previewArea">
+          <p id="placeholderText">Click to upload meme</p>
+          <img id="imagePreview" class="hidden" />
+        </div>
+
+        <input
+          type="file"
+          name="image"
+          id="imageInput"
+          accept="image/*"
+          hidden
+          required
+        />
+
+        <textarea
+          name="caption"
+          id="captionInput"
+          placeholder="Write a caption..."
+        ></textarea>
+      </form>
+    </main>
+
+    <script>
+      const fileInput = document.getElementById("imageInput");
+      const previewArea = document.getElementById("previewArea");
+      const imgPreview = document.getElementById("imagePreview");
+      const placeholder = document.getElementById("placeholderText");
+      const submitBtn = document.getElementById("submitBtn");
+      const form = document.getElementById("uploadForm");
+      const captionInput = document.getElementById("captionInput");
+
+      previewArea.addEventListener("click", () => fileInput.click());
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            imgPreview.src = ev.target.result;
+            imgPreview.classList.remove("hidden");
+            placeholder.classList.add("hidden");
+            checkValidity();
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      captionInput.addEventListener("input", checkValidity);
+
+      function checkValidity() {
+        if (
+          fileInput.files.length > 0 &&
+          captionInput.value.trim().length > 0
+        ) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = 1;
+        } else {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = 0.5;
+        }
+      }
+
+      submitBtn.addEventListener("click", () => {
+        form.submit();
+      });
+    </script>
+  </body>
+</html>

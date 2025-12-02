@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import ejs from "ejs";
 import { parse } from "cookie";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,56 @@ const getUserFromCookie = (req) => {
   } catch (e) {
     return null;
   }
+};
+
+const parseMultipartData = (req, boundary) => {
+  return new Promise((resolve, reject) => {
+    let rawData = [];
+
+    req.on("data", (chunk) => {
+      rawData.push(chunk);
+    });
+
+    req.on("end", () => {
+      const buffer = Buffer.concat(rawData);
+
+      const boundaryStr = "--" + boundary;
+
+      let parts = [];
+      let lastIndex = 0;
+
+      const bufferStr = buffer.toString("latin1");
+
+      const rawParts = bufferStr.split(boundaryStr);
+
+      const result = { caption: "", file: null };
+
+      rawParts.forEach((part) => {
+        if (part.trim() === "" || part.trim() === "--") return;
+
+        const headerEndIndex = part.indexOf("\r\n\r\n");
+        if (headerEndIndex === -1) return;
+
+        const header = part.substring(0, headerEndIndex);
+        const bodyStr = part.substring(headerEndIndex + 4, part.length - 2);
+        const bodyBuffer = Buffer.from(bodyStr, "latin1");
+
+        if (header.includes('name="caption"')) {
+          result.caption = bodyBuffer.toString();
+        } else if (header.includes('name="image"')) {
+          const match = header.match(/filename="(.+?)"/);
+          let filename = match ? match[1] : "upload.jpg";
+          result.file = {
+            filename: filename,
+            data: bodyBuffer,
+          };
+        }
+      });
+      resolve(result);
+    });
+
+    req.on("error", (err) => reject(err));
+  });
 };
 
 const server = http.createServer(async (req, res) => {
@@ -144,6 +195,103 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       console.error(err);
       return render(res, "login.ejs", { user: null, error: "Database Error" });
+    }
+  }
+
+  // route add post (harus login dlu)
+  if (url.pathname === "/add-post" && method === "GET") {
+    if (!user) {
+      res.writeHead(302, { Location: "/login" });
+      return res.end();
+    }
+    return render(res, "add-post.ejs", { user });
+  }
+
+  // API: handle add post
+  if (url.pathname === "/api/post" && method === "POST") {
+    if (!user) {
+      res.writeHead(403);
+      return res.end("Forbidden");
+    }
+
+    const contentType = req.headers["content-type"];
+    if (!contentType || !contentType.includes("multipart/form-data")) {
+      res.writeHead(400);
+      return res.end("Bad Request: Must be multipart");
+    }
+
+    const boundary = contentType.split("boundary=")[1];
+
+    try {
+      const data = await parseMultipartData(req, boundary);
+
+      if (data.file) {
+        const fileExt = path.extname(data.file.filename) || ".jpg";
+        const newFilename = crypto.randomBytes(16).toString("hex") + fileExt;
+        const uploadPath = path.join(
+          __dirname,
+          "public",
+          "uploads",
+          newFilename
+        );
+
+        fs.writeFileSync(uploadPath, data.file.data);
+
+        const dbImageLink = `/public/uploads/${newFilename}`;
+        await pool.query(
+          "INSERT INTO posts (user_id, image_url, caption) VALUES ($1, $2, $3)",
+          [user.id, dbImageLink, data.caption]
+        );
+
+        res.writeHead(302, { Location: "/" });
+        res.end();
+      } else {
+        res.writeHead(400);
+        res.end("No image uploaded");
+      }
+    } catch (err) {
+      console.error(err);
+      res.writeHead(500);
+      res.end("Upload Failed");
+    }
+    return;
+  }
+
+  // route profile page
+  if (url.pathname === "/profile" && method === "GET") {
+    const idParam = url.searchParams.get("id");
+    let targetId = idParam ? idParam : user ? user.id : null;
+
+    if (!targetId) {
+      res.writeHead(302, { Location: "/login" });
+      return res.end();
+    }
+
+    try {
+      const userRes = await pool.query(
+        "SELECT id, username, profile_picture FROM users WHERE id = $1",
+        [targetId]
+      );
+
+      if (userRes.rows.length === 0) {
+        res.writeHead(404);
+        return res.end("User not found");
+      }
+
+      const postsRes = await pool.query(
+        "SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC",
+        [targetId]
+      );
+
+      return render(res, "profile.ejs", {
+        user,
+        targetUser: userRes.rows[0],
+        posts: postsRes.rows,
+      });
+    } catch (err) {
+      console.error(err);
+      res.writeHead(500);
+      return res.end("Error loading profile");
     }
   }
 
