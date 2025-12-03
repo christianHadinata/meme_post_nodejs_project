@@ -52,8 +52,8 @@ const serveStatic = (res, urlPath) => {
         ext === ".css"
           ? "text/css"
           : ext === ".js"
-            ? "text/javascript"
-            : "image/jpeg";
+          ? "text/javascript"
+          : "image/jpeg";
       res.writeHead(200, { "Content-Type": mime });
       res.end(content);
     }
@@ -165,7 +165,7 @@ const server = http.createServer(async (req, res) => {
               posts.*, 
               users.username, 
               users.profile_picture,
-               AS is_liked
+              false AS is_liked
           FROM posts 
           LEFT JOIN users ON posts.user_id = users.id 
           ORDER BY created_at DESC
@@ -205,8 +205,6 @@ const server = http.createServer(async (req, res) => {
       if (result.rows.length > 0) {
         const dbUser = result.rows[0];
 
-        // nnti pake bycrypt compare disini, jgn simpen password polosan jg ke db
-        // oke - Ndrew
         const isPasswordMatch = await bcrypt.compare(password, dbUser.password);
 
         if (isPasswordMatch) {
