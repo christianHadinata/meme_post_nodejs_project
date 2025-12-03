@@ -47,12 +47,7 @@ const serveStatic = (res, urlPath) => {
       res.end("File not found");
     } else {
       const ext = path.extname(filePath);
-      const mime =
-        ext === ".css"
-          ? "text/css"
-          : ext === ".js"
-          ? "text/javascript"
-          : "image/jpeg";
+      const mime = ext === ".css" ? "text/css" : ext === ".js" ? "text/javascript" : "image/jpeg";
       res.writeHead(200, { "Content-Type": mime });
       res.end(content);
     }
@@ -121,7 +116,11 @@ const parseMultipartData = (req, boundary) => {
 };
 
 const server = http.createServer(async (req, res) => {
+  console.log(req);
   const url = new URL(req.url, `http://${req.headers.host}`);
+
+  // console.log("req url", req.url);
+  // console.log("path name", url.pathname);
   const method = req.method;
   const user = getUserFromCookie(req);
 
@@ -135,35 +134,50 @@ const server = http.createServer(async (req, res) => {
   // route home page
   if (url.pathname === "/" || url.pathname === "/home") {
     try {
-      const currentUserId = user ? user.id : 0;
+      // const currentUserId = user ? user.id : null;
 
-      const query = `
-                SELECT 
-                    posts.*, 
-                    users.username, 
-                    users.profile_picture,
-                    (CASE 
-                        WHEN EXISTS (
-                            SELECT 1 FROM post_likes 
-                            WHERE post_likes.post_id = posts.id 
-                            AND post_likes.user_id = $1
-                        ) THEN true 
-                        ELSE false 
-                    END) AS is_liked
-                FROM posts 
-                LEFT JOIN users ON posts.user_id = users.id 
-                ORDER BY created_at DESC
-            `;
+      let query;
+      const values = [];
+      if (user) {
+        query = `        
+          SELECT 
+              posts.*, 
+              users.username, 
+              users.profile_picture,
+              (CASE 
+                  WHEN EXISTS (
+                      SELECT 1 FROM post_likes 
+                      WHERE post_likes.post_id = posts.id 
+                      AND post_likes.user_id = $1
+                  ) THEN true 
+                  ELSE false 
+              END) AS is_liked
+          FROM posts 
+          LEFT JOIN users ON posts.user_id = users.id 
+          ORDER BY created_at DESC
+        `;
+        values.push(currentUserId);
+      } else {
+        query = `
+          SELECT 
+            posts.*, 
+            false AS is_liked
+          FROM posts 
+          ORDER BY created_at DESC;
+        `;
+      }
 
-      const result = await pool.query(query, [currentUserId]);
+      const result = await pool.query(query, values);
 
       return render(res, "home.ejs", { user, posts: result.rows });
     } catch (err) {
       console.error(err);
+      // return res.end("Internal Server Error");
       return render(res, "home.ejs", { user, posts: [] });
     }
   }
 
+  // route login page
   if (url.pathname === "/login" && method === "GET") {
     if (user) {
       res.writeHead(302, { Location: "/" });
@@ -172,7 +186,6 @@ const server = http.createServer(async (req, res) => {
     return render(res, "login.ejs", { user: null });
   }
 
-  // route login page
   if (url.pathname === "/api/login" && method === "POST") {
     const bodyStr = await getBody(req);
     const params = new URLSearchParams(bodyStr);
@@ -180,21 +193,14 @@ const server = http.createServer(async (req, res) => {
     const password = params.get("password");
 
     try {
-      const result = await pool.query(
-        "SELECT * FROM users WHERE username = $1",
-        [username]
-      );
+      const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
 
       if (result.rows.length > 0) {
         const dbUser = result.rows[0];
 
         // nnti pake bycrypt compare disini, jgn simpen password polosan jg ke db
         if (dbUser.password === password) {
-          const token = jwt.sign(
-            { id: dbUser.id, username: dbUser.username, role: dbUser.role },
-            SECRET_KEY,
-            { expiresIn: "1h" }
-          );
+          const token = jwt.sign({ id: dbUser.id, username: dbUser.username, role: dbUser.role }, SECRET_KEY, { expiresIn: "1h" });
 
           res.writeHead(302, {
             "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-Age=3600`,
@@ -243,20 +249,12 @@ const server = http.createServer(async (req, res) => {
       if (data.file) {
         const fileExt = path.extname(data.file.filename) || ".jpg";
         const newFilename = crypto.randomBytes(16).toString("hex") + fileExt;
-        const uploadPath = path.join(
-          __dirname,
-          "public",
-          "uploads",
-          newFilename
-        );
+        const uploadPath = path.join(__dirname, "public", "uploads", newFilename);
 
         fs.writeFileSync(uploadPath, data.file.data);
 
         const dbImageLink = `/public/uploads/${newFilename}`;
-        await pool.query(
-          "INSERT INTO posts (user_id, image_url, caption) VALUES ($1, $2, $3)",
-          [user.id, dbImageLink, data.caption]
-        );
+        await pool.query("INSERT INTO posts (user_id, image_url, caption) VALUES ($1, $2, $3)", [user.id, dbImageLink, data.caption]);
 
         res.writeHead(302, { Location: "/" });
         res.end();
@@ -283,20 +281,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const userRes = await pool.query(
-        "SELECT id, username, profile_picture FROM users WHERE id = $1",
-        [targetId]
-      );
+      const userRes = await pool.query("SELECT id, username, profile_picture FROM users WHERE id = $1", [targetId]);
 
       if (userRes.rows.length === 0) {
         res.writeHead(404);
         return res.end("User not found");
       }
 
-      const postsRes = await pool.query(
-        "SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC",
-        [targetId]
-      );
+      const postsRes = await pool.query("SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC", [targetId]);
 
       return render(res, "profile.ejs", {
         user,
@@ -334,23 +326,19 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/post/delete" && method === "POST") {
-    if (!user) return res.end("Unauthorized");
+    if (!user || user.role !== "admin") {
+      res.writeHead(403);
+      return res.end("Unauthorized");
+    }
 
     try {
       const bodyStr = await getBody(req);
       const { postId } = JSON.parse(bodyStr);
 
-      const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [
-        postId,
-      ]);
+      const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [postId]);
       if (postRes.rows.length === 0) return res.end("Post not found");
 
       const post = postRes.rows[0];
-
-      if (user.role !== "admin") {
-        res.writeHead(403);
-        return res.end("Forbidden");
-      }
 
       const relativePath = post.image_url.substring(1);
       const absolutePath = path.join(__dirname, relativePath);
@@ -378,38 +366,30 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ error: "Login required" }));
     }
 
+    if (user.role !== "user") {
+      res.writeHead(403);
+      return res.end(JSON.stringify({ error: "Unauthorized" }));
+    }
+
     try {
       const bodyStr = await getBody(req);
       const { postId } = JSON.parse(bodyStr);
 
-      const checkQuery =
-        "SELECT * FROM post_likes WHERE user_id = $1 AND post_id = $2";
+      const checkQuery = "SELECT * FROM post_likes WHERE user_id = $1 AND post_id = $2";
       const checkRes = await pool.query(checkQuery, [user.id, postId]);
 
       let newLikesCount = 0;
       let isLiked = false;
 
       if (checkRes.rows.length > 0) {
-        await pool.query(
-          "DELETE FROM post_likes WHERE user_id = $1 AND post_id = $2",
-          [user.id, postId]
-        );
+        await pool.query("DELETE FROM post_likes WHERE user_id = $1 AND post_id = $2", [user.id, postId]);
 
-        const updateRes = await pool.query(
-          "UPDATE posts SET likes = likes - 1 WHERE id = $1 RETURNING likes",
-          [postId]
-        );
+        const updateRes = await pool.query("UPDATE posts SET likes = likes - 1 WHERE id = $1 RETURNING likes", [postId]);
         newLikesCount = updateRes.rows[0].likes;
         isLiked = false;
       } else {
-        await pool.query(
-          "INSERT INTO post_likes (user_id, post_id) VALUES ($1, $2)",
-          [user.id, postId]
-        );
-        const updateRes = await pool.query(
-          "UPDATE posts SET likes = likes + 1 WHERE id = $1 RETURNING likes",
-          [postId]
-        );
+        await pool.query("INSERT INTO post_likes (user_id, post_id) VALUES ($1, $2)", [user.id, postId]);
+        const updateRes = await pool.query("UPDATE posts SET likes = likes + 1 WHERE id = $1 RETURNING likes", [postId]);
         newLikesCount = updateRes.rows[0].likes;
         isLiked = true;
       }
@@ -427,8 +407,7 @@ const server = http.createServer(async (req, res) => {
   // route logout
   if (url.pathname === "/api/logout") {
     res.writeHead(302, {
-      "Set-Cookie":
-        "auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      "Set-Cookie": "auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
       Location: "/login",
     });
     res.end();

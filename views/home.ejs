@@ -2,10 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>Home - MemeBE</title>
-    <link rel="stylesheet" href="/public/css/global.css" />
-    <style>
+    <link
+      rel="stylesheet"
+      href="/public/css/global.css"
+    />
+    <link
+      rel="stylesheet"
+      href="public/css/home.css"
+    />
+
+    <script
+      src="public/js/home.js"
+      defer
+    ></script>
+
+    <!-- <style>
       .post-container {
         display: flex;
         flex-direction: column;
@@ -59,7 +75,7 @@
         font-weight: 700;
         margin-right: 6px;
       }
-    </style>
+    </style> -->
   </head>
   <body>
     <main class="main-container">
@@ -67,9 +83,7 @@
 
       <div class="post-container">
         <% if (posts.length === 0) { %>
-        <p style="text-align: center; margin-top: 50px">
-          Belum ada postingan meme.
-        </p>
+        <p style="text-align: center; margin-top: 50px">Belum ada postingan meme.</p>
         <% } %> <% posts.forEach(post => { %>
         <div class="post-card">
           <div class="post-profile">
@@ -82,7 +96,11 @@
             </a>
           </div>
 
-          <img src="<%= post.image_url %>" alt="Meme" loading="lazy" />
+          <img
+            src="<%= post.image_url %>"
+            alt="Meme"
+            loading="lazy"
+          />
 
           <div class="post-actions">
             <svg
@@ -109,7 +127,7 @@
       </div>
     </main>
 
-    <script>
+    <!-- <script>
       async function toggleLike(svgElement, postId) {
         try {
           const response = await fetch("/api/like", {
@@ -140,6 +158,6 @@
           console.error("Error liking post:", err);
         }
       }
-    </script>
+    </script> -->
   </body>
 </html>
