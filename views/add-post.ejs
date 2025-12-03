@@ -2,22 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>New Post - MemeBE</title>
-    <link
-      rel="stylesheet"
-      href="/public/css/global.css"
-    />
+    <link rel="stylesheet" href="/public/css/global.css" />
 
-    <link
-      rel="stylesheet"
-      href="public/css/add-post.css"
-    />
+    <link rel="stylesheet" href="public/css/add-post.css" />
 
-    <script src="public/js/add-post.js"></script>
+    <script src="public/js/add-post.js" defer></script>
 
     <!-- <style>
       .header-post {
@@ -61,16 +52,19 @@
   <body>
     <main class="main-container">
       <div class="header-post">
-        <a
-          href="/"
-          class="reset-link-style"
-          style="font-size: 1.5rem"
+        <a href="/" class="reset-link-style" style="font-size: 1.5rem"
           >&times;</a
         >
         <h2>New Post</h2>
         <button
           id="submitBtn"
-          style="color: #0095f6; font-weight: bold; background: none; border: none; cursor: pointer"
+          style="
+            color: #0095f6;
+            font-weight: bold;
+            background: none;
+            border: none;
+            cursor: pointer;
+          "
           disabled
         >
           Post
@@ -83,15 +77,9 @@
         method="POST"
         enctype="multipart/form-data"
       >
-        <div
-          class="image-preview-area"
-          id="previewArea"
-        >
+        <div class="image-preview-area" id="previewArea">
           <p id="placeholderText">Click to upload meme</p>
-          <img
-            id="imagePreview"
-            class="hidden"
-          />
+          <img id="imagePreview" class="hidden" />
         </div>
 
         <input
