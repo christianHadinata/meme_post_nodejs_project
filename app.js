@@ -7,7 +7,8 @@ import dotenv from "dotenv";
 import ejs from "ejs";
 import { parse } from "cookie";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
+import crypto, { hash } from "crypto";
+import bcrypt from "bcrypt";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,8 +52,8 @@ const serveStatic = (res, urlPath) => {
         ext === ".css"
           ? "text/css"
           : ext === ".js"
-          ? "text/javascript"
-          : "image/jpeg";
+            ? "text/javascript"
+            : "image/jpeg";
       res.writeHead(200, { "Content-Type": mime });
       res.end(content);
     }
@@ -205,7 +206,12 @@ const server = http.createServer(async (req, res) => {
         const dbUser = result.rows[0];
 
         // nnti pake bycrypt compare disini, jgn simpen password polosan jg ke db
-        if (dbUser.password === password) {
+        // oke - Ndrew
+        const isPasswordMatch = await bcrypt.compare(password, dbUser.password);
+
+        if (isPasswordMatch) {
+          // if (dbUser.password === password) {
+          console.log("Login successful");
           const token = jwt.sign(
             { id: dbUser.id, username: dbUser.username, role: dbUser.role },
             SECRET_KEY,
