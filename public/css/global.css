@@ -215,3 +215,7 @@ body {
   background-color: #ccc;
   border: 1px solid var(--border-color);
 }
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}

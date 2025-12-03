@@ -211,7 +211,7 @@ const server = http.createServer(async (req, res) => {
           // if (dbUser.password === password) {
           console.log("Login successful");
           const token = jwt.sign(
-            { id: dbUser.id, username: dbUser.username, role: dbUser.role },
+            { id: dbUser.id, username: dbUser.username, role: dbUser.role, profile_picture: dbUser.profile_picture },
             SECRET_KEY,
             { expiresIn: "1h" }
           );
@@ -333,9 +333,11 @@ const server = http.createServer(async (req, res) => {
   // route manage post admin
   if (url.pathname === "/admin" && method === "GET") {
     console.log(user);
+
+    //jika bukan admin tapi mencoba access /admin, akan diredirect ke "/"
     if (!user || user.role !== "admin") {
-      res.writeHead(403);
-      return res.end("Access Denied: Admins only.");
+      res.writeHead(302, { Location: "/" });
+      return res.end();
     }
 
     try {
