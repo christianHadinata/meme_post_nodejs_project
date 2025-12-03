@@ -135,27 +135,43 @@ const server = http.createServer(async (req, res) => {
   // route home page
   if (url.pathname === "/" || url.pathname === "/home") {
     try {
-      const currentUserId = user ? user.id : 0;
+      // const currentUserId = user ? user.id : null;
 
-      const query = `
-                SELECT 
-                    posts.*, 
-                    users.username, 
-                    users.profile_picture,
-                    (CASE 
-                        WHEN EXISTS (
-                            SELECT 1 FROM post_likes 
-                            WHERE post_likes.post_id = posts.id 
-                            AND post_likes.user_id = $1
-                        ) THEN true 
-                        ELSE false 
-                    END) AS is_liked
-                FROM posts 
-                LEFT JOIN users ON posts.user_id = users.id 
-                ORDER BY created_at DESC
-            `;
+      let query;
+      const values = [];
+      if (user) {
+        query = `        
+          SELECT 
+              posts.*, 
+              users.username, 
+              users.profile_picture,
+              (CASE 
+                  WHEN EXISTS (
+                      SELECT 1 FROM post_likes 
+                      WHERE post_likes.post_id = posts.id 
+                      AND post_likes.user_id = $1
+                  ) THEN true 
+                  ELSE false 
+              END) AS is_liked
+          FROM posts 
+          LEFT JOIN users ON posts.user_id = users.id 
+          ORDER BY created_at DESC
+        `;
+        values.push(user.id);
+      } else {
+        query = `
+         SELECT 
+              posts.*, 
+              users.username, 
+              users.profile_picture,
+               AS is_liked
+          FROM posts 
+          LEFT JOIN users ON posts.user_id = users.id 
+          ORDER BY created_at DESC
+        `;
+      }
 
-      const result = await pool.query(query, [currentUserId]);
+      const result = await pool.query(query, values);
 
       return render(res, "home.ejs", { user, posts: result.rows });
     } catch (err) {

@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Home - MemeBE</title>
     <link rel="stylesheet" href="/public/css/global.css" />
-    <style>
+    <link rel="stylesheet" href="public/css/home.css" />
+
+    <script src="public/js/home.js" defer></script>
+
+    <!-- <style>
       .post-container {
         display: flex;
         flex-direction: column;
@@ -59,7 +63,7 @@
         font-weight: 700;
         margin-right: 6px;
       }
-    </style>
+    </style> -->
   </head>
   <body>
     <main class="main-container">
@@ -109,7 +113,7 @@
       </div>
     </main>
 
-    <script>
+    <!-- <script>
       async function toggleLike(svgElement, postId) {
         try {
           const response = await fetch("/api/like", {
@@ -140,6 +144,6 @@
           console.error("Error liking post:", err);
         }
       }
-    </script>
+    </script> -->
   </body>
 </html>
