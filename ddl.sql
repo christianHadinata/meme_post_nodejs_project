@@ -3,7 +3,7 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(10) DEFAULT 'user', -- 'user' atau 'admin'
-    profile_picture VARCHAR(255) DEFAULT '/uploads/default-pfp.jpg'
+    profile_picture VARCHAR(255) DEFAULT 'public/uploads/default-pfp.jpg'
 );
 
 CREATE TABLE posts (

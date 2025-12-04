@@ -26,6 +26,9 @@
 }
 .post-actions {
   padding: 12px 16px 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .like-button-svg {
   width: 24px;
