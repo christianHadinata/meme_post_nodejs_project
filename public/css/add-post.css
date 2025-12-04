@@ -36,12 +36,12 @@ textarea {
 }
 
 .close-btn {
-  font-size: 2rem; 
-  line-height: 1; 
-  padding: 0 8px; 
+  font-size: 2rem;
+  line-height: 1;
+  padding: 0 8px;
   cursor: pointer;
   color: var(--text-primary);
-  display: flex; 
+  display: flex;
   align-items: center;
 }
 
@@ -51,12 +51,11 @@ textarea {
   background: none;
   border: none;
   cursor: pointer;
-  transition: opacity 0.2s; /* smooth transition */
+  transition: opacity 0.2s;
 }
 
-/* This automatically dims the button whenever it has the 'disabled' attribute */
 #submitBtn:disabled {
-  opacity: 0.3; 
+  opacity: 0.3;
   cursor: default;
-  color: var(--text-secondary); /* Optional: makes it gray instead of dim blue */
+  color: var(--text-secondary);
 }
