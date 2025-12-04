@@ -2,10 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>Manage Posts - Admin</title>
-    <link rel="stylesheet" href="public/css/global.css" />
-    <link rel="stylesheet" href="public/css/admin.css" />
+    <link
+      rel="stylesheet"
+      href="public/css/global.css"
+    />
+    <link
+      rel="stylesheet"
+      href="public/css/admin.css"
+    />
+    <link
+      rel="stylesheet"
+      href="public/css/modal.css"
+    />
+    <script
+      src="public/js/modal.js"
+      defer
+    ></script>
 
     <!-- <style>
       .admin-header {
@@ -51,7 +68,10 @@
           class="grid-item"
           onclick="openModal('<%= post.id %>', '<%= post.image_url %>', '<%= post.caption %>', '<%= post.likes %>', '<%= post.username %>', true)"
         >
-          <img src="<%= post.image_url %>" loading="lazy" />
+          <img
+            src="<%= post.image_url %>"
+            loading="lazy"
+          />
         </div>
         <% }) %>
       </div>

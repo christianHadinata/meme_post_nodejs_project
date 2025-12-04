@@ -1,38 +1,42 @@
-<div id="postModal" class="modal">
+<div
+  id="postModal"
+  class="modal"
+>
   <div class="modal-content">
     <span class="modal-close">&times;</span>
 
-    <img id="modalImg" class="modal-img" src="" alt="Post Image" />
+    <img
+      id="modalImg"
+      class="modal-img"
+      src=""
+      alt="Post Image"
+    />
 
     <div class="modal-details">
-      <p id="modalCaption" class="modal-caption"></p>
+      <p
+        id="modalCaption"
+        class="modal-caption"
+      ></p>
       <small
         id="modalAuthor"
         style="color: gray; display: block; margin-bottom: 5px"
       ></small>
-      <p id="modalLikes" class="modal-likes"></p>
+      <p
+        id="modalLikes"
+        class="modal-likes"
+      ></p>
     </div>
 
     <button
       id="btnDelete"
       class="btn-danger hidden"
-      style="
-        width: 100%;
-        margin-top: 15px;
-        padding: 10px;
-        background: red;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      "
     >
       Take Down Post (Admin)
     </button>
   </div>
 </div>
 
-<style>
+<!-- <style>
   .modal {
     display: none;
     position: fixed;
@@ -75,9 +79,9 @@
   .hidden {
     display: none;
   }
-</style>
+</style> -->
 
-<script>
+<!-- <script>
   const modal = document.getElementById("postModal");
   const modalImg = document.getElementById("modalImg");
   const modalCaption = document.getElementById("modalCaption");
@@ -98,9 +102,7 @@
     if (isAdmin) {
       btnDelete.classList.remove("hidden");
       btnDelete.onclick = function () {
-        if (
-          confirm("Apakah Anda yakin ingin menghapus post ini secara permanen?")
-        ) {
+        if (confirm("Apakah Anda yakin ingin menghapus post ini secara permanen?")) {
           deletePost(id);
         }
       };
@@ -147,4 +149,4 @@
   window.onclick = function (event) {
     if (event.target == modal) modal.style.display = "none";
   };
-</script>
+</script> -->
