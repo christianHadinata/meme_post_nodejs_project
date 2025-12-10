@@ -9,6 +9,8 @@ import { parse } from "cookie";
 import jwt from "jsonwebtoken";
 import crypto, { hash } from "crypto";
 import bcrypt from "bcrypt";
+import zlib from "node:zlib";
+import { Readable } from "node:stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,11 +31,18 @@ const render = async (res, view, data = {}) => {
   try {
     const filePath = path.join(__dirname, "views", view);
     const html = await ejs.renderFile(filePath, data);
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(html);
+
+    res.writeHead(200, { 
+      "Content-Type": "text/html",
+      "Content-Encoding" : "gzip",
+    });
+
+    const htmlStream = Readable.from(html);
+    htmlStream.pipe(zlib.createGzip()).pipe(res);
+
   } catch (e) {
     console.error("Render Error:", e);
-    res.writeHead(500);
+    if (!res.headersSent) res.writeHead(500);
     res.end("Server Error rendering view");
   }
 };
@@ -42,8 +51,8 @@ const serveStatic = (res, urlPath) => {
   const safePath = path.normalize(urlPath).replace(/^(\.\.[\/\\])+/, "");
   const filePath = path.join(__dirname, safePath);
 
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
+  fs.stat(filePath, (err, stats) => {
+    if (err || !stats.isFile()) {
       res.writeHead(404);
       res.end("File not found");
     } else {
@@ -54,11 +63,35 @@ const serveStatic = (res, urlPath) => {
           : ext === ".js"
           ? "text/javascript"
           : "image/jpeg";
-      res.writeHead(200, { "Content-Type": mime });
-      res.end(content);
+      res.writeHead(200, { 
+        "Content-Type": mime, 
+        "Content-Encoding": "gzip",
+      });
+
+      const readStream = fs.createReadStream(filePath);
+      readStream.pipe(zlib.createGzip()).pipe(res);
     }
   });
 };
+
+const sendJson = (res, data, statusCode = 200) => {
+  try{
+    const jsonStr = JSON.stringify(data);
+
+    res.writeHead(statusCode, {
+      "Content-Type": "application/json",
+      "Content-Encoding": "gzip",
+    });
+
+    const jsonStream = Readable.from(jsonStr);
+    jsonStream.pipe(zlib.createGzip()).pipe(res);
+  
+  } catch(err) {
+    console.error("JSON Serialization Error:", err);
+    if(!res.headersSent) res.writeHead(500);
+    res.end('{"error": "Internal Server Error"}');
+  }
+}
 
 const getUserFromCookie = (req) => {
   const cookies = parse(req.headers.cookie || "");
@@ -84,8 +117,8 @@ const parseMultipartData = (req, boundary) => {
 
       const boundaryStr = "--" + boundary;
 
-      let parts = [];
-      let lastIndex = 0;
+      // let parts = [];
+      // let lastIndex = 0;
 
       const bufferStr = buffer.toString("latin1");
 
@@ -356,7 +389,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/post/delete" && method === "POST") {
-    if (!user) return res.end("Unauthorized");
+    if (!user) return sendJson(res, { error: "Unauthorized" }, 401);
 
     try {
       const bodyStr = await getBody(req);
@@ -365,13 +398,12 @@ const server = http.createServer(async (req, res) => {
       const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [
         postId,
       ]);
-      if (postRes.rows.length === 0) return res.end("Post not found");
+      if (postRes.rows.length === 0) return sendJson(res, { error: "Post not found" }, 404);
 
       const post = postRes.rows[0];
 
       if (user.role !== "admin") {
-        res.writeHead(403);
-        return res.end("Forbidden");
+        return sendJson(res, { error: "Forbidden" }, 403);
       }
 
       const relativePath = post.image_url.substring(1);
@@ -383,12 +415,11 @@ const server = http.createServer(async (req, res) => {
 
       await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
 
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
+      sendJson(res, { success: true });
+
     } catch (err) {
       console.error(err);
-      res.writeHead(500);
-      res.end(JSON.stringify({ success: false }));
+      sendJson(res, { success: false }, 500);
     }
     return;
   }
@@ -396,8 +427,7 @@ const server = http.createServer(async (req, res) => {
   // API buat like post
   if (url.pathname === "/api/like" && method === "POST") {
     if (!user) {
-      res.writeHead(401);
-      return res.end(JSON.stringify({ error: "Login required" }));
+      return sendJson(res, { error: "Login required" }, 401);
     }
 
     try {
@@ -436,12 +466,11 @@ const server = http.createServer(async (req, res) => {
         isLiked = true;
       }
 
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true, likes: newLikesCount, isLiked }));
+      sendJson(res, { success: true, likes: newLikesCount, isLiked });
+    
     } catch (err) {
       console.error(err);
-      res.writeHead(500);
-      res.end(JSON.stringify({ error: "Server Error" }));
+      sendJson(res, { error: "Server Error" }, 500);
     }
     return;
   }
