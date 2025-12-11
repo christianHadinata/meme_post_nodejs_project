@@ -32,14 +32,13 @@ const render = async (res, view, data = {}) => {
     const filePath = path.join(__dirname, "views", view);
     const html = await ejs.renderFile(filePath, data);
 
-    res.writeHead(200, { 
+    res.writeHead(200, {
       "Content-Type": "text/html",
-      "Content-Encoding" : "gzip",
+      "Content-Encoding": "gzip",
     });
 
     const htmlStream = Readable.from(html);
     htmlStream.pipe(zlib.createGzip()).pipe(res);
-
   } catch (e) {
     console.error("Render Error:", e);
     if (!res.headersSent) res.writeHead(500);
@@ -62,9 +61,9 @@ const serveStatic = (res, urlPath) => {
           ? "text/css"
           : ext === ".js"
           ? "text/javascript"
-          : "image/jpeg";
-      res.writeHead(200, { 
-        "Content-Type": mime, 
+          : "image/webp";
+      res.writeHead(200, {
+        "Content-Type": mime,
         "Content-Encoding": "gzip",
       });
 
@@ -75,7 +74,7 @@ const serveStatic = (res, urlPath) => {
 };
 
 const sendJson = (res, data, statusCode = 200) => {
-  try{
+  try {
     const jsonStr = JSON.stringify(data);
 
     res.writeHead(statusCode, {
@@ -85,13 +84,12 @@ const sendJson = (res, data, statusCode = 200) => {
 
     const jsonStream = Readable.from(jsonStr);
     jsonStream.pipe(zlib.createGzip()).pipe(res);
-  
-  } catch(err) {
+  } catch (err) {
     console.error("JSON Serialization Error:", err);
-    if(!res.headersSent) res.writeHead(500);
+    if (!res.headersSent) res.writeHead(500);
     res.end('{"error": "Internal Server Error"}');
   }
-}
+};
 
 const getUserFromCookie = (req) => {
   const cookies = parse(req.headers.cookie || "");
@@ -140,7 +138,7 @@ const parseMultipartData = (req, boundary) => {
           result.caption = bodyBuffer.toString();
         } else if (header.includes('name="image"')) {
           const match = header.match(/filename="(.+?)"/);
-          let filename = match ? match[1] : "upload.jpg";
+          let filename = match ? match[1] : "upload.webp";
           result.file = {
             filename: filename,
             data: bodyBuffer,
@@ -244,7 +242,12 @@ const server = http.createServer(async (req, res) => {
           // if (dbUser.password === password) {
           console.log("Login successful");
           const token = jwt.sign(
-            { id: dbUser.id, username: dbUser.username, role: dbUser.role, profile_picture: dbUser.profile_picture },
+            {
+              id: dbUser.id,
+              username: dbUser.username,
+              role: dbUser.role,
+              profile_picture: dbUser.profile_picture,
+            },
             SECRET_KEY,
             { expiresIn: "1h" }
           );
@@ -294,8 +297,24 @@ const server = http.createServer(async (req, res) => {
       const data = await parseMultipartData(req, boundary);
 
       if (data.file) {
-        const fileExt = path.extname(data.file.filename) || ".jpg";
-        const newFilename = crypto.randomBytes(16).toString("hex") + fileExt;
+        const buffer = data.file.data;
+        if (buffer.length < 12) {
+          res.writeHead(400);
+          return res.end("Invalid file format");
+        }
+
+        const isWEBP =
+          buffer[8] === 0x57 &&
+          buffer[9] === 0x45 &&
+          buffer[10] === 0x42 &&
+          buffer[11] === 0x50;
+
+        if (!isWEBP) {
+          res.writeHead(400, { "Content-Type": "text/plain" });
+          return res.end("Error: Hanya format WebP yang diperbolehkan!");
+        }
+
+        const newFilename = crypto.randomBytes(16).toString("hex") + ".webp";
         const uploadPath = path.join(
           __dirname,
           "public",
@@ -398,7 +417,8 @@ const server = http.createServer(async (req, res) => {
       const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [
         postId,
       ]);
-      if (postRes.rows.length === 0) return sendJson(res, { error: "Post not found" }, 404);
+      if (postRes.rows.length === 0)
+        return sendJson(res, { error: "Post not found" }, 404);
 
       const post = postRes.rows[0];
 
@@ -416,7 +436,6 @@ const server = http.createServer(async (req, res) => {
       await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
 
       sendJson(res, { success: true });
-
     } catch (err) {
       console.error(err);
       sendJson(res, { success: false }, 500);
@@ -467,7 +486,6 @@ const server = http.createServer(async (req, res) => {
       }
 
       sendJson(res, { success: true, likes: newLikesCount, isLiked });
-    
     } catch (err) {
       console.error(err);
       sendJson(res, { error: "Server Error" }, 500);
