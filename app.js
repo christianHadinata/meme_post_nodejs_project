@@ -253,7 +253,7 @@ const server = http.createServer(async (req, res) => {
           );
 
           res.writeHead(302, {
-            "Set-Cookie": `auth_token=${token}; HttpOnly; Path=/; Max-Age=3600`,
+            "Set-Cookie": `auth_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`,
             Location: "/",
           });
           return res.end();
