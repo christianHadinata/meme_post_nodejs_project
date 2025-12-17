@@ -8,19 +8,19 @@ const targetHost = "localhost";
 const targetPort = 3000; // port app.js (di-hardcode karena reverse proxy ini hanya digunakan untuk server tersebut. Kecuali reverse proxy ini akan menjadi virtual host)
 
 //ssl certificates
-//harus digenerate menggunakan: openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+//harus digenerate menggunakan: openssl req -x509 -newkey rsa:2048 -nodes -sha256 -subj "/CN=localhost" -keyout private-key.pem -out certificate.pem
 const options = {
-  key: fs.readFileSync("key.pem"),
-  cert: fs.readFileSync("cert.pem"),
+  key: fs.readFileSync("private-key.pem"),
+  cert: fs.readFileSync("certificate.pem"),
 };
 
 const proxy = https.createServer(options);
 
 proxy.on("request", (clientReq, clientRes) => {
-  //memparse dan format Forwarded header RFC 7239
+  //memparse dan format Forwarded header
   //mengambil IP client
   const remoteAddress = clientReq.socket.remoteAddress;
-  //jika IP berbentuk IPv6, akan diberikan format "[xxxx:xxxx::xx]" karena terdapat colon yang juga merupakan separator pada RFC 7239
+  //jika IP berbentuk IPv6, akan diberikan format "[xxxx:xxxx::xx]" karena terdapat colon yang juga merupakan separator pada Forwarded header
   const clientIp = remoteAddress.includes(":")
     ? `"[${remoteAddress}]"`
     : remoteAddress;

@@ -13,5 +13,5 @@ yarn-debug.log*
 Thumbs.db
 
 # keys
-key.pem
-cert.pem
+private-key.pem
+certificate.pem
