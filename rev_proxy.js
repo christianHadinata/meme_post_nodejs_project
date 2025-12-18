@@ -3,7 +3,7 @@ import http from "http";
 import fs from "fs";
 
 //config
-const proxyPort = 443; // HTTPS Default
+const proxyPort = 8000;
 const targetHost = "localhost";
 const targetPort = 3000; // port app.js (di-hardcode karena reverse proxy ini hanya digunakan untuk server tersebut. Kecuali reverse proxy ini akan menjadi virtual host)
 
