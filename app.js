@@ -56,12 +56,7 @@ const serveStatic = (res, urlPath) => {
       res.end("File not found");
     } else {
       const ext = path.extname(filePath);
-      const mime =
-        ext === ".css"
-          ? "text/css"
-          : ext === ".js"
-          ? "text/javascript"
-          : "image/webp";
+      const mime = ext === ".css" ? "text/css" : ext === ".js" ? "text/javascript" : "image/webp";
       res.writeHead(200, {
         "Content-Type": mime,
         "Content-Encoding": "gzip",
@@ -228,10 +223,7 @@ const server = http.createServer(async (req, res) => {
     const password = params.get("password");
 
     try {
-      const result = await pool.query(
-        "SELECT * FROM users WHERE username = $1",
-        [username]
-      );
+      const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
 
       if (result.rows.length > 0) {
         const dbUser = result.rows[0];
@@ -253,7 +245,7 @@ const server = http.createServer(async (req, res) => {
           );
 
           res.writeHead(302, {
-            "Set-Cookie": `auth_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`,
+            "Set-Cookie": `auth_token=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600`,
             Location: "/",
           });
           return res.end();
@@ -303,11 +295,7 @@ const server = http.createServer(async (req, res) => {
           return res.end("Invalid file format");
         }
 
-        const isWEBP =
-          buffer[8] === 0x57 &&
-          buffer[9] === 0x45 &&
-          buffer[10] === 0x42 &&
-          buffer[11] === 0x50;
+        const isWEBP = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
 
         if (!isWEBP) {
           res.writeHead(400, { "Content-Type": "text/plain" });
@@ -315,20 +303,12 @@ const server = http.createServer(async (req, res) => {
         }
 
         const newFilename = crypto.randomBytes(16).toString("hex") + ".webp";
-        const uploadPath = path.join(
-          __dirname,
-          "public",
-          "uploads",
-          newFilename
-        );
+        const uploadPath = path.join(__dirname, "public", "uploads", newFilename);
 
         fs.writeFileSync(uploadPath, data.file.data);
 
         const dbImageLink = `/public/uploads/${newFilename}`;
-        await pool.query(
-          "INSERT INTO posts (user_id, image_url, caption) VALUES ($1, $2, $3)",
-          [user.id, dbImageLink, data.caption]
-        );
+        await pool.query("INSERT INTO posts (user_id, image_url, caption) VALUES ($1, $2, $3)", [user.id, dbImageLink, data.caption]);
 
         res.writeHead(302, { Location: "/" });
         res.end();
@@ -355,20 +335,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const userRes = await pool.query(
-        "SELECT id, username, profile_picture FROM users WHERE id = $1",
-        [targetId]
-      );
+      const userRes = await pool.query("SELECT id, username, profile_picture FROM users WHERE id = $1", [targetId]);
 
       if (userRes.rows.length === 0) {
         res.writeHead(404);
         return res.end("User not found");
       }
 
-      const postsRes = await pool.query(
-        "SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC",
-        [targetId]
-      );
+      const postsRes = await pool.query("SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC", [targetId]);
 
       return render(res, "profile.ejs", {
         user,
@@ -414,11 +388,8 @@ const server = http.createServer(async (req, res) => {
       const bodyStr = await getBody(req);
       const { postId } = JSON.parse(bodyStr);
 
-      const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [
-        postId,
-      ]);
-      if (postRes.rows.length === 0)
-        return sendJson(res, { error: "Post not found" }, 404);
+      const postRes = await pool.query("SELECT * FROM posts WHERE id = $1", [postId]);
+      if (postRes.rows.length === 0) return sendJson(res, { error: "Post not found" }, 404);
 
       const post = postRes.rows[0];
 
@@ -453,34 +424,21 @@ const server = http.createServer(async (req, res) => {
       const bodyStr = await getBody(req);
       const { postId } = JSON.parse(bodyStr);
 
-      const checkQuery =
-        "SELECT * FROM post_likes WHERE user_id = $1 AND post_id = $2";
+      const checkQuery = "SELECT * FROM post_likes WHERE user_id = $1 AND post_id = $2";
       const checkRes = await pool.query(checkQuery, [user.id, postId]);
 
       let newLikesCount = 0;
       let isLiked = false;
 
       if (checkRes.rows.length > 0) {
-        await pool.query(
-          "DELETE FROM post_likes WHERE user_id = $1 AND post_id = $2",
-          [user.id, postId]
-        );
+        await pool.query("DELETE FROM post_likes WHERE user_id = $1 AND post_id = $2", [user.id, postId]);
 
-        const updateRes = await pool.query(
-          "UPDATE posts SET likes = likes - 1 WHERE id = $1 RETURNING likes",
-          [postId]
-        );
+        const updateRes = await pool.query("UPDATE posts SET likes = likes - 1 WHERE id = $1 RETURNING likes", [postId]);
         newLikesCount = updateRes.rows[0].likes;
         isLiked = false;
       } else {
-        await pool.query(
-          "INSERT INTO post_likes (user_id, post_id) VALUES ($1, $2)",
-          [user.id, postId]
-        );
-        const updateRes = await pool.query(
-          "UPDATE posts SET likes = likes + 1 WHERE id = $1 RETURNING likes",
-          [postId]
-        );
+        await pool.query("INSERT INTO post_likes (user_id, post_id) VALUES ($1, $2)", [user.id, postId]);
+        const updateRes = await pool.query("UPDATE posts SET likes = likes + 1 WHERE id = $1 RETURNING likes", [postId]);
         newLikesCount = updateRes.rows[0].likes;
         isLiked = true;
       }
@@ -496,8 +454,7 @@ const server = http.createServer(async (req, res) => {
   // route logout
   if (url.pathname === "/api/logout") {
     res.writeHead(302, {
-      "Set-Cookie":
-        "auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      "Set-Cookie": "auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
       Location: "/login",
     });
     res.end();

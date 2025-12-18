@@ -14,28 +14,29 @@ const options = {
   cert: fs.readFileSync("certificate.pem"),
 };
 
+// fungsi untukk format ip, kalau ipv6 jadi [ip]
+// butuh dilakukan karena ipv6 ada ":" yang merupakan seperator pada forwarded header yang dapat meganggu format
+const formatIpForHeader = (ip) => (ip.includes(":") ? `"[${ip}]"` : ip);
+
 const proxy = https.createServer(options);
 
 proxy.on("request", (clientReq, clientRes) => {
   //memparse dan format Forwarded header
   //mengambil IP client
-  const remoteAddress = clientReq.socket.remoteAddress;
-  //jika IP berbentuk IPv6, akan diberikan format "[xxxx:xxxx::xx]" karena terdapat colon yang juga merupakan separator pada Forwarded header
-  const clientIp = remoteAddress.includes(":")
-    ? `"[${remoteAddress}]"`
-    : remoteAddress;
+  const clientIp = formatIpForHeader(clientReq.socket.remoteAddress);
+
+  // mengambil IP proxy ini
+  const proxyIdentifier = formatIpForHeader(clientReq.socket.localAddress);
 
   //membuat forwardedHeader dengan format for {sumber request}; protocol = https (agar sesuai dengan permintaan); host {port proxy}
-  const forwardedHeader = `for=${clientIp};proto=https;host=${clientReq.headers.host}`;
+  const forwardedHeader = `by=${proxyIdentifier};for=${clientIp};proto=https;host=${clientReq.headers.host}`;
 
   //mengambil header yang sudah ada pada request
   const proxyHeaders = { ...clientReq.headers };
 
   //menambahkan forwarded header (jika sudah ada, append saja)
   const existingForwarded = clientReq.headers["forwarded"];
-  proxyHeaders["Forwarded"] = existingForwarded
-    ? `${existingForwarded}, ${forwardedHeader}`
-    : forwardedHeader;
+  proxyHeaders["Forwarded"] = existingForwarded ? `${existingForwarded}, ${forwardedHeader}` : forwardedHeader;
 
   //membuat request baru untuk server asil
   const serverReq = http.request({
